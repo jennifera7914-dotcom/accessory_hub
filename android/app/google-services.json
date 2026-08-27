@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "857760577239",
+    "project_id": "accessory-hub-e6560",
+    "storage_bucket": "accessory-hub-e6560.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857760577239:android:21e7a743f317504691e292",
+        "android_client_info": {
+          "package_name": "com.example.accessory_hub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCAWRACKIpGQpV64SpX7uBeW3odOtNLub4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
