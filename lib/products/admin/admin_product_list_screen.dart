@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/firebase_products.dart';
 import '../models/product.dart';
 import 'admin_add_product_screen.dart';
+import 'admin_edit_product_screen.dart';
 
 class AdminProductListScreen extends StatefulWidget {
   const AdminProductListScreen({super.key});
@@ -348,19 +349,19 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
                   Row(
                     children: [
                       OutlinedButton.icon(
-                        onPressed: () {
-                          // Edit Product Screen will be built next.
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Edit ${product.name} will be built next',
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.edit, size: 16),
-                        label: const Text('Edit'),
-                      ),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AdminEditProductScreen(
+          product: product,
+        ),
+      ),
+    );
+  },
+  icon: const Icon(Icons.edit, size: 16),
+  label: const Text('Edit'),
+),
 
                       const SizedBox(width: 8),
 
