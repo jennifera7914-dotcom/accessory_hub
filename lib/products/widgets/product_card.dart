@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
+
 import '../models/product.dart';
-import '../screens/product_detail_screen.dart';  // ← NEW: so this file knows about the detail screen
+import '../screens/product_detail_screen.dart';
 
-// This is ONE product card. It takes a Product and draws it on screen.
+// This is ONE product card.
+// It is used on Home, Category, and Search screens.
 class ProductCard extends StatelessWidget {
-  final Product product;  // the product data we receive
+  final Product product;
 
-  const ProductCard({super.key, required this.product});
+  const ProductCard({
+    super.key,
+    required this.product,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // First, figure out stock status
     bool isInStock = product.stock > 0;
     bool isLowStock = product.stock > 0 && product.stock <= 10;
 
-    return GestureDetector(   // ← NEW: makes the whole card tappable
+    return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
@@ -24,31 +28,28 @@ class ProductCard extends StatelessWidget {
         );
       },
       child: Container(
-        width: 170,  // fixed width for grid layout
+        width: 170,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),  // rounded corners
-          boxShadow: [
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black12,
               blurRadius: 8,
-              offset: const Offset(0, 2),  // shadow goes slightly down
+              offset: Offset(0, 2),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,  // align left
-          children: [
 
-            // ═══════════════════════════════════════
-            // TOP SECTION: Image + Heart + Stock Badge
-            // ═══════════════════════════════════════
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Product image + stock badge
             Stack(
               children: [
-                // Product image placeholder (grey box with icon)
                 Container(
                   height: 140,
-                  width: double.infinity,  // fill full width
+                  width: double.infinity,
                   decoration: BoxDecoration(
                     color: Colors.grey[200],
                     borderRadius: const BorderRadius.only(
@@ -56,14 +57,33 @@ class ProductCard extends StatelessWidget {
                       topRight: Radius.circular(12),
                     ),
                   ),
-                  child: Icon(
-                    Icons.phone_android,
-                    size: 50,
-                    color: Colors.grey[400],
-                  ),
+                  child: product.image.isEmpty
+                      ? Icon(
+                          Icons.phone_android,
+                          size: 50,
+                          color: Colors.grey[400],
+                        )
+                      : ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(12),
+                            topRight: Radius.circular(12),
+                          ),
+                          child: Image.network(
+                            product.image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.broken_image,
+                                size: 50,
+                                color: Colors.grey[400],
+                              );
+                            },
+                          ),
+                        ),
                 ),
 
-                // Wishlist heart button (top-right corner)
+                // Wishlist heart UI only.
+                // Member 1 will connect real wishlist later.
                 Positioned(
                   top: 8,
                   right: 8,
@@ -81,7 +101,7 @@ class ProductCard extends StatelessWidget {
                   ),
                 ),
 
-                // Stock badge (bottom-left of image)
+                // Stock badge
                 Positioned(
                   bottom: 8,
                   left: 8,
@@ -91,7 +111,6 @@ class ProductCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      // Green if in stock, Orange if low, Red if out
                       color: !isInStock
                           ? Colors.red
                           : isLowStock
@@ -116,16 +135,13 @@ class ProductCard extends StatelessWidget {
               ],
             ),
 
-            // ═══════════════════════════════════════
-            // BOTTOM SECTION: Name, Rating, Price
-            // ═══════════════════════════════════════
+            // Product details
             Padding(
               padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
-                  // Product name (max 2 lines, then "...")
+                  // Product name
                   Text(
                     product.name,
                     maxLines: 2,
@@ -136,46 +152,29 @@ class ProductCard extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 4),  // small gap
-
-                  // Rating star + sold count (side by side)
-                  Row(
-                    children: [
-                      const Icon(Icons.star, size: 14, color: Colors.amber),
-                      Text(
-                        ' ${product.rating}',
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      Text(
-                        ' | ${product.soldCount} sold',
-                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-
                   const SizedBox(height: 6),
 
-                  // Price row: selling price + MRP strikethrough
-                  Row(
-                    children: [
-                      Text(
-                        '₹${product.price}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '₹${product.mrp}',
-                        style: TextStyle(
-                          decoration: TextDecoration.lineThrough,
-                          color: Colors.grey[500],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                  // Category
+                  Text(
+                    product.category,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // MRP
+                  Text(
+                    'MRP ₹${product.mrp}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black,
+                    ),
                   ),
                 ],
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/product.dart';
 
 // This screen shows full details of ONE selected product.
@@ -16,11 +17,14 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int quantity = 1;
-  bool isWishlisted = false; // temporary UI only. Member 1 will handle real wishlist later.
+
+  // Temporary UI only.
+  // Member 1 will connect real wishlist Firebase logic later.
+  bool isWishlisted = false;
 
   @override
   Widget build(BuildContext context) {
-    final product = widget.product;
+    final Product product = widget.product;
 
     bool isInStock = product.stock > 0;
     bool isLowStock = product.stock > 0 && product.stock <= 10;
@@ -36,7 +40,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // PRODUCT IMAGE
+            // Product image
             Container(
               height: 280,
               width: double.infinity,
@@ -50,6 +54,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   : Image.network(
                       product.image,
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          Icons.broken_image,
+                          size: 100,
+                          color: Colors.grey[400],
+                        );
+                      },
                     ),
             ),
 
@@ -58,7 +69,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // PRODUCT NAME
+                  // Product name
                   Text(
                     product.name,
                     style: const TextStyle(
@@ -69,34 +80,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   const SizedBox(height: 12),
 
-                  // PRICE / MRP
-                  Row(
-                    children: [
-                      Text(
-                        '₹${product.price}',
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-
-                      const SizedBox(width: 10),
-
-                      Text(
-                        'MRP ₹${product.mrp}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                          decoration: TextDecoration.lineThrough,
-                        ),
-                      ),
-                    ],
+                  // MRP
+                  Text(
+                    'MRP ₹${product.mrp}',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                   ),
 
                   const SizedBox(height: 12),
 
-                  // STOCK STATUS
+                  // Stock status
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -157,7 +153,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   const SizedBox(height: 24),
 
-                  // QUANTITY SELECTOR
+                  // Quantity selector
                   const Text(
                     'Select Quantity',
                     style: TextStyle(
@@ -170,7 +166,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   Row(
                     children: [
-                      // Minus button
                       _quantityButton(
                         icon: Icons.remove,
                         onTap: () {
@@ -200,10 +195,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                       ),
 
-                      // Plus button
                       _quantityButton(
                         icon: Icons.add,
                         onTap: () {
+                          if (!isInStock) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Product is out of stock'),
+                              ),
+                            );
+                            return;
+                          }
+
                           if (quantity < product.stock) {
                             setState(() {
                               quantity++;
@@ -211,7 +214,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Cannot select more than available stock'),
+                                content: Text(
+                                  'Cannot select more than available stock',
+                                ),
                               ),
                             );
                           }
@@ -222,8 +227,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   const SizedBox(height: 8),
 
+                  // Total amount
                   Text(
-                    'Total: ₹${product.price * quantity}',
+                    'Total: ₹${product.mrp * quantity}',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -232,7 +238,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   const SizedBox(height: 24),
 
-                  // DESCRIPTION
+                  // Description
                   const Text(
                     'Product Description',
                     style: TextStyle(
@@ -254,7 +260,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   const SizedBox(height: 24),
 
-                  // COMPATIBLE PHONES
+                  // Compatible phones
                   if (product.compatiblePhones.isNotEmpty) ...[
                     const Text(
                       'Compatible With',
@@ -286,7 +292,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
       ),
 
-      // BOTTOM BUTTONS
+      // Bottom buttons
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: const BoxDecoration(
@@ -299,6 +305,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
           ],
         ),
+
         child: Row(
           children: [
             // Wishlist button
@@ -308,7 +315,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   isWishlisted = !isWishlisted;
                 });
 
-                // Later Member 1 will replace this with real wishlist Firebase code.
+                // Later Member 1 will replace this with real wishlist service.
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
@@ -335,12 +342,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
             const SizedBox(width: 12),
 
-            // Add to Cart
+            // Add to cart button
             Expanded(
               child: ElevatedButton(
                 onPressed: isInStock
                     ? () {
-                        // Later Member 3 will replace this with cart code.
+                        // Later Member 3 will connect real cart service here.
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -361,12 +368,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
             const SizedBox(width: 12),
 
-            // Order Now
+            // Order now button
             Expanded(
               child: ElevatedButton(
                 onPressed: isInStock
                     ? () {
-                        // Later Member 3 will replace this with checkout code.
+                        // Later Member 3 will connect Checkout screen here.
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/firebase_products.dart';
 import '../models/product.dart';
+import 'admin_add_product_screen.dart';
 
 class AdminProductListScreen extends StatefulWidget {
   const AdminProductListScreen({super.key});
@@ -26,9 +27,10 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Add Product screen will be built next'),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminAddProductScreen(),
                 ),
               );
             },
@@ -39,19 +41,19 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
       body: StreamBuilder<List<Product>>(
         stream: FirebaseProducts.getAllProducts(),
         builder: (context, snapshot) {
-          // While Firebase is loading products
+          // Loading
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // If Firebase gives error
+          // Error
           if (snapshot.hasError) {
             return Center(
               child: Text('Error: ${snapshot.error}'),
             );
           }
 
-          // If no products exist
+          // No products
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(
               child: Text(
@@ -63,13 +65,13 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
 
           List<Product> allProducts = snapshot.data!;
 
-          // Make category list from Firebase products
+          // Create category list from product data
           List<String> categories = [
             'All',
             ...allProducts.map((product) => product.category).toSet(),
           ];
 
-          // Apply search and category filter
+          // Search + category filter
           List<Product> visibleProducts = allProducts.where((product) {
             bool matchesSearch = product.name
                 .toLowerCase()
@@ -81,7 +83,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
             return matchesSearch && matchesCategory;
           }).toList();
 
-          // Apply sorting
+          // Sort products
           _sortProducts(visibleProducts);
 
           return Column(
@@ -105,7 +107,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
                 ),
               ),
 
-              // Category filter chips
+              // Category chips
               SizedBox(
                 height: 45,
                 child: ListView.builder(
@@ -136,7 +138,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
                 ),
               ),
 
-              // Count and sort row
+              // Total count + sort dropdown
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -160,12 +162,12 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
                           child: Text('Name A-Z'),
                         ),
                         DropdownMenuItem(
-                          value: 'Price Low-High',
-                          child: Text('Price Low-High'),
+                          value: 'MRP Low-High',
+                          child: Text('MRP Low-High'),
                         ),
                         DropdownMenuItem(
-                          value: 'Price High-Low',
-                          child: Text('Price High-Low'),
+                          value: 'MRP High-Low',
+                          child: Text('MRP High-Low'),
                         ),
                         DropdownMenuItem(
                           value: 'Stock Low-High',
@@ -198,7 +200,6 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
                         itemCount: visibleProducts.length,
                         itemBuilder: (context, index) {
                           Product product = visibleProducts[index];
-
                           return _adminProductCard(product);
                         },
                       ),
@@ -213,10 +214,10 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
   void _sortProducts(List<Product> products) {
     if (selectedSort == 'Name A-Z') {
       products.sort((a, b) => a.name.compareTo(b.name));
-    } else if (selectedSort == 'Price Low-High') {
-      products.sort((a, b) => a.price.compareTo(b.price));
-    } else if (selectedSort == 'Price High-Low') {
-      products.sort((a, b) => b.price.compareTo(a.price));
+    } else if (selectedSort == 'MRP Low-High') {
+      products.sort((a, b) => a.mrp.compareTo(b.mrp));
+    } else if (selectedSort == 'MRP High-Low') {
+      products.sort((a, b) => b.mrp.compareTo(a.mrp));
     } else if (selectedSort == 'Stock Low-High') {
       products.sort((a, b) => a.stock.compareTo(b.stock));
     }
@@ -246,10 +247,11 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(12),
+
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product image placeholder
+            // Product image
             Container(
               height: 80,
               width: 80,
@@ -268,6 +270,13 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
                       child: Image.network(
                         product.image,
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.broken_image,
+                            size: 35,
+                            color: Colors.grey[500],
+                          );
+                        },
                       ),
                     ),
             ),
@@ -291,23 +300,12 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
 
                   const SizedBox(height: 6),
 
-                  Row(
-                    children: [
-                      Text(
-                        '₹${product.price}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'MRP ₹${product.mrp}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          decoration: TextDecoration.lineThrough,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'MRP ₹${product.mrp}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
 
                   const SizedBox(height: 6),
@@ -324,7 +322,11 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
 
                   Row(
                     children: [
-                      Icon(stockIcon, color: stockColor, size: 16),
+                      Icon(
+                        stockIcon,
+                        color: stockColor,
+                        size: 16,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Stock: ${product.stock} • $stockText',
@@ -343,6 +345,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
                     children: [
                       OutlinedButton.icon(
                         onPressed: () {
+                          // Edit Product Screen will be built next.
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
