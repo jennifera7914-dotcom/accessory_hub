@@ -24,18 +24,22 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AdminAddProductScreen(),
-                ),
-              );
-            },
-          ),
-        ],
+  TextButton.icon(
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const AdminAddProductScreen(),
+        ),
+      );
+    },
+    icon: const Icon(Icons.add, color: Colors.white),
+    label: const Text(
+      'Add',
+      style: TextStyle(color: Colors.white),
+    ),
+  ),
+],
       ),
 
       body: StreamBuilder<List<Product>>(
