@@ -5,6 +5,7 @@ import '../models/product.dart';
 import '../widgets/product_card.dart';
 import 'category_screen.dart';
 import 'search_screen.dart';
+import '../admin/admin_product_list_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -22,8 +23,15 @@ class HomeScreen extends StatelessWidget {
             onPressed: () {},
           ),
           IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () {},
+            icon: const Icon(Icons.admin_panel_settings),
+            onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const AdminProductListScreen(),
+        ),
+      );
+    },
           ),
         ],
       ),
