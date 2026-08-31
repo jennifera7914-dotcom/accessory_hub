@@ -4,6 +4,7 @@ import '../data/firebase_products.dart';
 import '../models/product.dart';
 import 'admin_add_product_screen.dart';
 import 'admin_edit_product_screen.dart';
+import 'admin_manage_categories_screen.dart';
 
 class AdminProductListScreen extends StatefulWidget {
   const AdminProductListScreen({super.key});
@@ -24,8 +25,23 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
         title: const Text('Manage Products'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
-        actions: [
-  TextButton.icon(
+       actions: [
+  IconButton(
+    icon: const Icon(Icons.category),
+    tooltip: 'Manage Categories',
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const AdminManageCategoriesScreen(),
+        ),
+      );
+    },
+  ),
+
+  IconButton(
+    icon: const Icon(Icons.add),
+    tooltip: 'Add Product',
     onPressed: () {
       Navigator.push(
         context,
@@ -34,11 +50,6 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
         ),
       );
     },
-    icon: const Icon(Icons.add, color: Colors.white),
-    label: const Text(
-      'Add',
-      style: TextStyle(color: Colors.white),
-    ),
   ),
 ],
       ),
