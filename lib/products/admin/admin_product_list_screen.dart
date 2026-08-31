@@ -5,6 +5,7 @@ import '../models/product.dart';
 import 'admin_add_product_screen.dart';
 import 'admin_edit_product_screen.dart';
 import 'admin_manage_categories_screen.dart';
+import 'admin_stock_alerts_screen.dart';
 
 class AdminProductListScreen extends StatefulWidget {
   const AdminProductListScreen({super.key});
@@ -26,6 +27,19 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
        actions: [
+  IconButton(
+    icon: const Icon(Icons.warning),
+    tooltip: 'Stock Alerts',
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const AdminStockAlertsScreen(),
+        ),
+      );
+    },
+  ),
+
   IconButton(
     icon: const Icon(Icons.category),
     tooltip: 'Manage Categories',
