@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../data/firebase_categories.dart';
 import '../data/firebase_products.dart';
 import '../models/product.dart';
+import '../models/product_category.dart';
 
 class AdminEditProductScreen extends StatefulWidget {
   final Product product;
@@ -22,8 +24,9 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
   late TextEditingController descriptionController;
   late TextEditingController mrpController;
   late TextEditingController stockController;
-  late TextEditingController categoryController;
   late TextEditingController phonesController;
+
+  late String selectedCategory;
 
   late bool isFeatured;
   late bool isNewArrival;
@@ -36,16 +39,15 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
 
     Product product = widget.product;
 
-    // Fill fields with existing product values
     nameController = TextEditingController(text: product.name);
     descriptionController = TextEditingController(text: product.description);
     mrpController = TextEditingController(text: product.mrp.toString());
     stockController = TextEditingController(text: product.stock.toString());
-    categoryController = TextEditingController(text: product.category);
     phonesController = TextEditingController(
       text: product.compatiblePhones.join(', '),
     );
 
+    selectedCategory = product.category;
     isFeatured = product.isFeatured;
     isNewArrival = product.isNewArrival;
   }
@@ -56,7 +58,6 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
     descriptionController.dispose();
     mrpController.dispose();
     stockController.dispose();
-    categoryController.dispose();
     phonesController.dispose();
     super.dispose();
   }
@@ -84,7 +85,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
         image: widget.product.image,
         mrp: int.parse(mrpController.text.trim()),
         stock: int.parse(stockController.text.trim()),
-        category: categoryController.text.trim(),
+        category: selectedCategory,
         compatiblePhones: compatiblePhones,
         isFeatured: isFeatured,
         isNewArrival: isNewArrival,
@@ -242,11 +243,9 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                 keyboardType: TextInputType.number,
               ),
 
-              _textField(
-                controller: categoryController,
-                label: 'Category',
-                hint: 'Example: Cases',
-              ),
+              _categoryDropdown(),
+
+              const SizedBox(height: 14),
 
               _textField(
                 controller: phonesController,
@@ -323,6 +322,90 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _categoryDropdown() {
+    return StreamBuilder<List<ProductCategory>>(
+      stream: FirebaseCategories.getAllCategories(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.only(bottom: 14),
+            child: LinearProgressIndicator(),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Text(
+              'Error loading categories: ${snapshot.error}',
+              style: const TextStyle(color: Colors.red),
+            ),
+          );
+        }
+
+        List<ProductCategory> categories = snapshot.data ?? [];
+
+        if (categories.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.only(bottom: 14),
+            child: Text(
+              'No categories found. Add categories first.',
+              style: TextStyle(color: Colors.red),
+            ),
+          );
+        }
+
+        // If old product category is not in Firebase category list,
+        // add it temporarily so dropdown does not crash.
+        bool categoryExists = categories.any(
+          (category) => category.name == selectedCategory,
+        );
+
+        List<DropdownMenuItem<String>> items = categories.map((category) {
+          return DropdownMenuItem<String>(
+            value: category.name,
+            child: Text('${category.icon} ${category.name}'),
+          );
+        }).toList();
+
+        if (!categoryExists && selectedCategory.isNotEmpty) {
+          items.insert(
+            0,
+            DropdownMenuItem<String>(
+              value: selectedCategory,
+              child: Text(selectedCategory),
+            ),
+          );
+        }
+
+        return DropdownButtonFormField<String>(
+          value: selectedCategory.isEmpty ? null : selectedCategory,
+          decoration: InputDecoration(
+            labelText: 'Category',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          items: items,
+          onChanged: (value) {
+            if (value == null) return;
+
+            setState(() {
+              selectedCategory = value;
+            });
+          },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Category is required';
+            }
+
+            return null;
+          },
+        );
+      },
     );
   }
 

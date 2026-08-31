@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../data/firebase_categories.dart';
 import '../data/firebase_products.dart';
 import '../models/product.dart';
+import '../models/product_category.dart';
 
 class AdminAddProductScreen extends StatefulWidget {
   const AdminAddProductScreen({super.key});
@@ -18,8 +20,9 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController mrpController = TextEditingController();
   final TextEditingController stockController = TextEditingController();
-  final TextEditingController categoryController = TextEditingController();
   final TextEditingController phonesController = TextEditingController();
+
+  String? selectedCategory;
 
   bool isFeatured = false;
   bool isNewArrival = false;
@@ -32,7 +35,6 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     descriptionController.dispose();
     mrpController.dispose();
     stockController.dispose();
-    categoryController.dispose();
     phonesController.dispose();
     super.dispose();
   }
@@ -42,16 +44,20 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
       return;
     }
 
+    if (selectedCategory == null || selectedCategory!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a category'),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       isSaving = true;
     });
 
     try {
-      // Convert comma separated phones into list.
-      // Example:
-      // "iPhone 15, iPhone 15 Pro"
-      // becomes
-      // ["iPhone 15", "iPhone 15 Pro"]
       List<String> compatiblePhones = phonesController.text
           .split(',')
           .map((phone) => phone.trim())
@@ -65,7 +71,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
         image: '',
         mrp: int.parse(mrpController.text.trim()),
         stock: int.parse(stockController.text.trim()),
-        category: categoryController.text.trim(),
+        category: selectedCategory!,
         compatiblePhones: compatiblePhones,
         isFeatured: isFeatured,
         isNewArrival: isNewArrival,
@@ -160,11 +166,9 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                 keyboardType: TextInputType.number,
               ),
 
-              _textField(
-                controller: categoryController,
-                label: 'Category',
-                hint: 'Example: Cases',
-              ),
+              _categoryDropdown(),
+
+              const SizedBox(height: 14),
 
               _textField(
                 controller: phonesController,
@@ -226,6 +230,70 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _categoryDropdown() {
+    return StreamBuilder<List<ProductCategory>>(
+      stream: FirebaseCategories.getAllCategories(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.only(bottom: 14),
+            child: LinearProgressIndicator(),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Text(
+              'Error loading categories: ${snapshot.error}',
+              style: const TextStyle(color: Colors.red),
+            ),
+          );
+        }
+
+        List<ProductCategory> categories = snapshot.data ?? [];
+
+        if (categories.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.only(bottom: 14),
+            child: Text(
+              'No categories found. Add categories first.',
+              style: TextStyle(color: Colors.red),
+            ),
+          );
+        }
+
+        return DropdownButtonFormField<String>(
+          value: selectedCategory,
+          decoration: InputDecoration(
+            labelText: 'Category',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          items: categories.map((category) {
+            return DropdownMenuItem<String>(
+              value: category.name,
+              child: Text('${category.icon} ${category.name}'),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              selectedCategory = value;
+            });
+          },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Category is required';
+            }
+
+            return null;
+          },
+        );
+      },
     );
   }
 
