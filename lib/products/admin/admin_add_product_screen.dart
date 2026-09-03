@@ -19,7 +19,6 @@ class AdminAddProductScreen extends StatefulWidget {
 class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController idController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController mrpController = TextEditingController();
@@ -37,7 +36,6 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
 
   @override
   void dispose() {
-    idController.dispose();
     nameController.dispose();
     descriptionController.dispose();
     mrpController.dispose();
@@ -85,7 +83,8 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     });
 
     try {
-      String productId = idController.text.trim();
+      // App creates product ID automatically here.
+      String productId = FirebaseProducts.createProductId();
 
       String imageUrl = '';
       String cloudinaryPublicId = '';
@@ -158,10 +157,13 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
+
         child: Form(
           key: _formKey,
+
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -187,13 +189,26 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
-              _textField(
-                controller: idController,
-                label: 'Product ID',
-                hint: 'Example: P004',
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.blue[100]!),
+                ),
+                child: const Text(
+                  'Product ID will be generated automatically.',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
+
+              const SizedBox(height: 16),
 
               _textField(
                 controller: nameController,
@@ -297,7 +312,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
           height: 180,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.grey[200],
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.grey[300]!),
           ),
@@ -354,7 +369,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
         ),
 
         const Text(
-          'Image is optional for now, but recommended.',
+          'Image is optional, but recommended.',
           style: TextStyle(
             fontSize: 12,
             color: Colors.grey,
@@ -437,10 +452,12 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
+
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
+
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
@@ -448,6 +465,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
             borderRadius: BorderRadius.circular(10),
           ),
         ),
+
         validator: (value) {
           if (value == null || value.trim().isEmpty) {
             return '$label is required';
