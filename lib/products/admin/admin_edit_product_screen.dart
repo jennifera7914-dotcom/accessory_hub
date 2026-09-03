@@ -1,5 +1,9 @@
-import 'package:flutter/material.dart';
+import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../data/cloudinary_service.dart';
 import '../data/firebase_categories.dart';
 import '../data/firebase_products.dart';
 import '../models/product.dart';
@@ -33,6 +37,9 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
 
   bool isSaving = false;
 
+  XFile? selectedImageFile;
+  Uint8List? selectedImageBytes;
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +69,26 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
+
+    if (image == null) {
+      return;
+    }
+
+    final Uint8List bytes = await image.readAsBytes();
+
+    setState(() {
+      selectedImageFile = image;
+      selectedImageBytes = bytes;
+    });
+  }
+
   Future<void> _updateProduct() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -72,6 +99,21 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
     });
 
     try {
+      String imageUrl = widget.product.image;
+      String cloudinaryPublicId = widget.product.cloudinaryPublicId;
+
+      // If admin selected new image, upload new image to Cloudinary.
+      if (selectedImageFile != null) {
+        CloudinaryUploadResult uploadResult =
+            await CloudinaryService.uploadProductImage(
+          imageFile: selectedImageFile!,
+          productId: widget.product.id,
+        );
+
+        imageUrl = uploadResult.imageUrl;
+        cloudinaryPublicId = uploadResult.publicId;
+      }
+
       List<String> compatiblePhones = phonesController.text
           .split(',')
           .map((phone) => phone.trim())
@@ -82,7 +124,8 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
         id: widget.product.id,
         name: nameController.text.trim(),
         description: descriptionController.text.trim(),
-        image: widget.product.image,
+        image: imageUrl,
+        cloudinaryPublicId: cloudinaryPublicId,
         mrp: int.parse(mrpController.text.trim()),
         stock: int.parse(stockController.text.trim()),
         category: selectedCategory,
@@ -177,6 +220,21 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
     );
   }
 
+  void _removeImageOnlyFromProduct() {
+    setState(() {
+      selectedImageFile = null;
+      selectedImageBytes = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'To fully remove saved image, we will add that option later.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     Product product = widget.product;
@@ -214,7 +272,21 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
+
+              const Text(
+                'Product Image',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              _imagePickerBox(),
+
+              const SizedBox(height: 24),
 
               _textField(
                 controller: nameController,
@@ -325,6 +397,99 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
     );
   }
 
+  Widget _imagePickerBox() {
+    bool hasExistingImage = widget.product.image.isNotEmpty;
+    bool hasNewImage = selectedImageBytes != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 180,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: hasNewImage
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.memory(
+                    selectedImageBytes!,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  ),
+                )
+              : hasExistingImage
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        widget.product.image,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _emptyImagePlaceholder(
+                            text: 'Image could not load',
+                          );
+                        },
+                      ),
+                    )
+                  : _emptyImagePlaceholder(text: 'No image selected'),
+        ),
+
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            ElevatedButton.icon(
+              onPressed: _pickImage,
+              icon: const Icon(Icons.photo_library),
+              label: Text(
+                hasExistingImage || hasNewImage ? 'Change Image' : 'Pick Image',
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            if (hasNewImage)
+              TextButton.icon(
+                onPressed: _removeImageOnlyFromProduct,
+                icon: const Icon(Icons.close),
+                label: const Text('Cancel New Image'),
+              ),
+          ],
+        ),
+
+        const Text(
+          'If you pick a new image, it will replace the image URL saved for this product.',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _emptyImagePlaceholder({required String text}) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.image,
+          size: 55,
+          color: Colors.grey[500],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          text,
+          style: TextStyle(color: Colors.grey[600]),
+        ),
+      ],
+    );
+  }
+
   Widget _categoryDropdown() {
     return StreamBuilder<List<ProductCategory>>(
       stream: FirebaseCategories.getAllCategories(),
@@ -358,8 +523,6 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
           );
         }
 
-        // If old product category is not in Firebase category list,
-        // add it temporarily so dropdown does not crash.
         bool categoryExists = categories.any(
           (category) => category.name == selectedCategory,
         );

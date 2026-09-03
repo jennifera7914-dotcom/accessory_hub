@@ -1,5 +1,9 @@
-import 'package:flutter/material.dart';
+import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../data/cloudinary_service.dart';
 import '../data/firebase_categories.dart';
 import '../data/firebase_products.dart';
 import '../models/product.dart';
@@ -28,6 +32,9 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   bool isNewArrival = false;
   bool isSaving = false;
 
+  XFile? selectedImageFile;
+  Uint8List? selectedImageBytes;
+
   @override
   void dispose() {
     idController.dispose();
@@ -37,6 +44,26 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     stockController.dispose();
     phonesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
+
+    if (image == null) {
+      return;
+    }
+
+    final Uint8List bytes = await image.readAsBytes();
+
+    setState(() {
+      selectedImageFile = image;
+      selectedImageBytes = bytes;
+    });
   }
 
   Future<void> _saveProduct() async {
@@ -58,6 +85,23 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     });
 
     try {
+      String productId = idController.text.trim();
+
+      String imageUrl = '';
+      String cloudinaryPublicId = '';
+
+      // If admin selected image, upload it to Cloudinary first.
+      if (selectedImageFile != null) {
+        CloudinaryUploadResult uploadResult =
+            await CloudinaryService.uploadProductImage(
+          imageFile: selectedImageFile!,
+          productId: productId,
+        );
+
+        imageUrl = uploadResult.imageUrl;
+        cloudinaryPublicId = uploadResult.publicId;
+      }
+
       List<String> compatiblePhones = phonesController.text
           .split(',')
           .map((phone) => phone.trim())
@@ -65,10 +109,11 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
           .toList();
 
       Product newProduct = Product(
-        id: idController.text.trim(),
+        id: productId,
         name: nameController.text.trim(),
         description: descriptionController.text.trim(),
-        image: '',
+        image: imageUrl,
+        cloudinaryPublicId: cloudinaryPublicId,
         mrp: int.parse(mrpController.text.trim()),
         stock: int.parse(stockController.text.trim()),
         category: selectedCategory!,
@@ -113,16 +158,27 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-
         child: Form(
           key: _formKey,
-
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const Text(
+                'Product Image',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              _imagePickerBox(),
+
+              const SizedBox(height: 24),
+
               const Text(
                 'Product Details',
                 style: TextStyle(
@@ -233,6 +289,81 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     );
   }
 
+  Widget _imagePickerBox() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 180,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: selectedImageBytes == null
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.image,
+                      size: 55,
+                      color: Colors.grey[500],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'No image selected',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                )
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.memory(
+                    selectedImageBytes!,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  ),
+                ),
+        ),
+
+        const SizedBox(height: 10),
+
+        Row(
+          children: [
+            ElevatedButton.icon(
+              onPressed: _pickImage,
+              icon: const Icon(Icons.photo_library),
+              label: const Text('Pick Image'),
+            ),
+
+            const SizedBox(width: 10),
+
+            if (selectedImageBytes != null)
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    selectedImageFile = null;
+                    selectedImageBytes = null;
+                  });
+                },
+                icon: const Icon(Icons.close),
+                label: const Text('Remove'),
+              ),
+          ],
+        ),
+
+        const Text(
+          'Image is optional for now, but recommended.',
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _categoryDropdown() {
     return StreamBuilder<List<ProductCategory>>(
       stream: FirebaseCategories.getAllCategories(),
@@ -306,12 +437,10 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
-
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
@@ -319,7 +448,6 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
             borderRadius: BorderRadius.circular(10),
           ),
         ),
-
         validator: (value) {
           if (value == null || value.trim().isEmpty) {
             return '$label is required';

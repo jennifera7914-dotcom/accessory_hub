@@ -30,21 +30,16 @@ class CloudinaryService {
 
     final request = http.MultipartRequest('POST', url);
 
-    // Upload preset tells Cloudinary:
-    // "Allow this app to upload image without API secret."
     request.fields['upload_preset'] = uploadPreset;
-
-    // Folder where images will be stored in Cloudinary.
     request.fields['folder'] = 'accessory_hub/products';
 
-    // Public ID helps identify image.
-    // Example: product P001 image will be named P001.
-    request.fields['public_id'] = productId;
+    // Unique public id prevents duplicate-name upload problems.
+    // Example: P001_1723456789123
+    request.fields['public_id'] =
+        '${productId}_${DateTime.now().millisecondsSinceEpoch}';
 
-    // Read selected image as bytes.
     final bytes = await imageFile.readAsBytes();
 
-    // Attach image file to request.
     request.files.add(
       http.MultipartFile.fromBytes(
         'file',
@@ -53,21 +48,15 @@ class CloudinaryService {
       ),
     );
 
-    // Send image to Cloudinary.
     final streamedResponse = await request.send();
-
-    // Convert response to readable format.
     final response = await http.Response.fromStream(streamedResponse);
 
-    // If upload failed, show error.
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw Exception('Cloudinary upload failed: ${response.body}');
     }
 
-    // Convert Cloudinary response text into Map.
     final Map<String, dynamic> data = jsonDecode(response.body);
 
-    // Return image URL and public ID.
     return CloudinaryUploadResult(
       imageUrl: data['secure_url'] ?? '',
       publicId: data['public_id'] ?? '',
