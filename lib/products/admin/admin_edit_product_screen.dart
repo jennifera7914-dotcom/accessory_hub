@@ -40,6 +40,9 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
   XFile? selectedImageFile;
   Uint8List? selectedImageBytes;
 
+  // New: if admin wants to remove existing saved image
+  bool removeSavedImage = false;
+
   @override
   void initState() {
     super.initState();
@@ -86,6 +89,9 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
     setState(() {
       selectedImageFile = image;
       selectedImageBytes = bytes;
+
+      // If admin picks new image, cancel remove-image decision.
+      removeSavedImage = false;
     });
   }
 
@@ -102,7 +108,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
       String imageUrl = widget.product.image;
       String cloudinaryPublicId = widget.product.cloudinaryPublicId;
 
-      // If admin selected new image, upload new image to Cloudinary.
+      // Case 1: Admin selected a new image
       if (selectedImageFile != null) {
         CloudinaryUploadResult uploadResult =
             await CloudinaryService.uploadProductImage(
@@ -113,6 +119,15 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
         imageUrl = uploadResult.imageUrl;
         cloudinaryPublicId = uploadResult.publicId;
       }
+
+      // Case 2: Admin wants to remove saved image
+      else if (removeSavedImage) {
+        imageUrl = '';
+        cloudinaryPublicId = '';
+      }
+
+      // Case 3: No image change
+      // Keep old imageUrl and old cloudinaryPublicId
 
       List<String> compatiblePhones = phonesController.text
           .split(',')
@@ -217,21 +232,6 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
           ],
         );
       },
-    );
-  }
-
-  void _removeImageOnlyFromProduct() {
-    setState(() {
-      selectedImageFile = null;
-      selectedImageBytes = null;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'To fully remove saved image, we will add that option later.',
-        ),
-      ),
     );
   }
 
@@ -398,7 +398,9 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
   }
 
   Widget _imagePickerBox() {
-    bool hasExistingImage = widget.product.image.isNotEmpty;
+    bool hasExistingImage =
+        widget.product.image.isNotEmpty && removeSavedImage == false;
+
     bool hasNewImage = selectedImageBytes != null;
 
     return Column(
@@ -408,10 +410,11 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
           height: 180,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.grey[200],
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.grey[300]!),
           ),
+
           child: hasNewImage
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(12),
@@ -435,12 +438,18 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                         },
                       ),
                     )
-                  : _emptyImagePlaceholder(text: 'No image selected'),
+                  : _emptyImagePlaceholder(
+                      text: removeSavedImage
+                          ? 'Image will be removed after saving'
+                          : 'No image selected',
+                    ),
         ),
 
         const SizedBox(height: 10),
 
-        Row(
+        Wrap(
+          spacing: 10,
+          runSpacing: 8,
           children: [
             ElevatedButton.icon(
               onPressed: _pickImage,
@@ -450,20 +459,54 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
               ),
             ),
 
-            const SizedBox(width: 10),
-
             if (hasNewImage)
               TextButton.icon(
-                onPressed: _removeImageOnlyFromProduct,
+                onPressed: () {
+                  setState(() {
+                    selectedImageFile = null;
+                    selectedImageBytes = null;
+                  });
+                },
                 icon: const Icon(Icons.close),
                 label: const Text('Cancel New Image'),
+              ),
+
+            if (hasExistingImage && !hasNewImage)
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    removeSavedImage = true;
+                    selectedImageFile = null;
+                    selectedImageBytes = null;
+                  });
+                },
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Remove Saved Image'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red,
+                ),
+              ),
+
+            if (removeSavedImage)
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    removeSavedImage = false;
+                  });
+                },
+                icon: const Icon(Icons.undo),
+                label: const Text('Undo Remove'),
               ),
           ],
         ),
 
-        const Text(
-          'If you pick a new image, it will replace the image URL saved for this product.',
-          style: TextStyle(
+        const SizedBox(height: 6),
+
+        Text(
+          removeSavedImage
+              ? 'Tap Save Changes to remove this image from the product.'
+              : 'You can change or remove the product image.',
+          style: const TextStyle(
             fontSize: 12,
             color: Colors.grey,
           ),
