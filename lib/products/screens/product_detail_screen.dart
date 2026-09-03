@@ -53,7 +53,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     )
                   : Image.network(
                       product.image,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) {
                         return Icon(
                           Icons.broken_image,

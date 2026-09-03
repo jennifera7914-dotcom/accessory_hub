@@ -417,7 +417,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                   borderRadius: BorderRadius.circular(12),
                   child: Image.memory(
                     selectedImageBytes!,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                     width: double.infinity,
                   ),
                 )
@@ -426,7 +426,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                       borderRadius: BorderRadius.circular(12),
                       child: Image.network(
                         widget.product.image,
-                        fit: BoxFit.cover,
+                        fit: BoxFit.contain,
                         width: double.infinity,
                         errorBuilder: (context, error, stackTrace) {
                           return _emptyImagePlaceholder(

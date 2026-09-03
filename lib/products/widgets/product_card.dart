@@ -70,8 +70,7 @@ class ProductCard extends StatelessWidget {
                           ),
                           child: Image.network(
                             product.image,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
+                            fit: BoxFit.contain,                            errorBuilder: (context, error, stackTrace) {
                               return Icon(
                                 Icons.broken_image,
                                 size: 50,

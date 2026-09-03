@@ -321,7 +321,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                   borderRadius: BorderRadius.circular(12),
                   child: Image.memory(
                     selectedImageBytes!,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                     width: double.infinity,
                   ),
                 ),

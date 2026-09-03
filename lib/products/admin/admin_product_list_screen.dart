@@ -299,7 +299,7 @@ class _AdminProductListScreenState extends State<AdminProductListScreen> {
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
                         product.image,
-                        fit: BoxFit.cover,
+                        fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) {
                           return Icon(
                             Icons.broken_image,
