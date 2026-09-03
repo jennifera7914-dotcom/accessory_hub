@@ -4,7 +4,15 @@ class Product {
   final String id;
   final String name;
   final String description;
+
+  // This stores Cloudinary image URL.
+  // Example: https://res.cloudinary.com/....
   final String image;
+
+  // This stores Cloudinary public_id.
+  // Example: accessory_hub/products/P001
+  final String cloudinaryPublicId;
+
   final int mrp;
   final int stock;
   final String category;
@@ -23,6 +31,7 @@ class Product {
     required this.compatiblePhones,
     required this.isFeatured,
     required this.isNewArrival,
+    this.cloudinaryPublicId = '',
   });
 
   // Firebase data -> Product object
@@ -31,7 +40,13 @@ class Product {
       id: id,
       name: data['name'] ?? '',
       description: data['description'] ?? '',
-      image: data['image'] ?? '',
+
+      // New field name: imageUrl
+      // Old field name backup: image
+      image: data['imageUrl'] ?? data['image'] ?? '',
+
+      cloudinaryPublicId: data['cloudinaryPublicId'] ?? '',
+
       mrp: _toInt(data['mrp']),
       stock: _toInt(data['stock']),
       category: data['category'] ?? '',
@@ -46,7 +61,13 @@ class Product {
     return {
       'name': name,
       'description': description,
-      'image': image,
+
+      // We save Cloudinary URL here.
+      'imageUrl': image,
+
+      // We save Cloudinary public ID here.
+      'cloudinaryPublicId': cloudinaryPublicId,
+
       'mrp': mrp,
       'stock': stock,
       'category': category,
@@ -56,7 +77,6 @@ class Product {
     };
   }
 
-  // This safely converts Firebase number into int.
   static int _toInt(dynamic value) {
     if (value == null) return 0;
     if (value is int) return value;
